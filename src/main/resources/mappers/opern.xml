@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="dao.OpernDao">
+
+    <insert id="insertOpernInfos">
+        INSERT INTO tbl_opern_info (originName, originId, opernName, opernWordAuthor, opernSongAuthor, opernViews,
+        opernUploader, opernOriginHtmlUrl, opernPicNum, opernFirstPicUrl, opernFormat, opernCategoryOne,
+        opernCategoryTwo, opernUploadTime, addTime)VALUES
+        <foreach collection="list" item="item" index="index" separator=",">
+            (
+            #{item.originName},
+            #{item.originId},
+            #{item.opernName},
+            #{item.opernWordAuthor},
+            #{item.opernSongAuthor},
+            #{item.opernViews},
+            #{item.opernUploader},
+            #{item.opernOriginHtmlUrl},
+            #{item.opernPicNum},
+            #{item.opernFirstPicUrl},
+            #{item.opernFormat},
+            #{item.opernCategoryOne},
+            #{item.opernCategoryTwo},
+            #{item.opernUploadTime},
+            now()
+            )
+        </foreach>
+    </insert>
+
+    <insert id="insertOpernPicInfos">
+        INSERT INTO tbl_opern_pic_info (opernId, opernPicIndex, opernPicUrl)VALUES
+        <foreach collection="list" item="item" index="index" separator=",">
+            (
+            #{item.opernId},
+            #{item.opernPicIndex},
+            #{item.opernPicUrl}
+            )
+        </foreach>
+    </insert>
+
+    <update id="updateOpernPicNumFirstPicInfo">
+        UPDATE tbl_opern_info OI
+        SET opernPicNum                                                 = (SELECT count(1)
+                                                                           FROM tbl_opern_pic_info OPI
+                                                                           WHERE OI.id = OPI.opernId),
+            opernFirstPicUrl                                            = (SELECT opernPicUrl
+                                                                           FROM tbl_opern_pic_info OPI
+                                                                           WHERE OPI.opernId = OI.id
+                                                                           ORDER BY opernPicIndex
+                                                                           LIMIT 1)
+    </update>
+
+    <select id="listOpernInfo" resultType="model.OpernInfo">
+        SELECT *
+        FROM tbl_opern_info
+    </select>
+
+
+</mapper>
