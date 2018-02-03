@@ -150,6 +150,15 @@ public class GetAllOpernListInfo {
             } catch (IOException e) {
                 e.printStackTrace();
             }
+        } else {
+            boolean success = tempFile.delete();
+            LogUtil.i("删除曲谱列表数据临时文件", "创建" + (success ? "成功" : "失败"));
+            try {
+                boolean createSuccess = tempFile.createNewFile();
+                LogUtil.i("创建曲谱列表数据临时文件", "创建" + (createSuccess ? "成功" : "失败"));
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
         try {
             FileWriter fileWriter = new FileWriter(tempFile, true);

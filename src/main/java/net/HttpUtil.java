@@ -39,6 +39,7 @@ public class HttpUtil {
             Response response = client.newCall(request).execute();
             if (response.isSuccessful()) {
                 responseStr = response.body().string();
+                response.body().close();
                 return responseStr == null ? "" : responseStr;
             } else {
                 LogUtil.i("网络请求异常", "code : " + response.code() + " 请求地址: " + url);
