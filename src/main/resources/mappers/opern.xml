@@ -29,6 +29,29 @@
         </foreach>
     </insert>
 
+    <insert id="insertOpernInfo" parameterType="model.OpernInfo">
+        INSERT INTO tbl_opern_info (originName, originId, opernName, opernWordAuthor, opernSongAuthor, opernViews,
+                                    opernUploader, opernOriginHtmlUrl, opernPicNum, opernFirstPicUrl, opernFormat, opernCategoryOne,
+                                    opernCategoryTwo, opernUploadTime, addTime) VALUES
+            (
+                #{opernInfo.originName},
+                #{opernInfo.originId},
+                #{opernInfo.opernName},
+                #{opernInfo.opernWordAuthor},
+                #{opernInfo.opernSongAuthor},
+                #{opernInfo.opernViews},
+                #{opernInfo.opernUploader},
+                #{opernInfo.opernOriginHtmlUrl},
+                #{opernInfo.opernPicNum},
+                #{opernInfo.opernFirstPicUrl},
+                #{opernInfo.opernFormat},
+                #{opernInfo.opernCategoryOne},
+                #{opernInfo.opernCategoryTwo},
+                #{opernInfo.opernUploadTime},
+                now()
+            )
+    </insert>
+
     <insert id="insertOpernPicInfos">
         INSERT INTO tbl_opern_pic_info (opernId, opernPicIndex, opernPicUrl)VALUES
         <foreach collection="list" item="item" index="index" separator=",">
@@ -42,14 +65,14 @@
 
     <update id="updateOpernPicNumFirstPicInfo">
         UPDATE tbl_opern_info OI
-        SET opernPicNum                                                 = (SELECT count(1)
-                                                                           FROM tbl_opern_pic_info OPI
-                                                                           WHERE OI.id = OPI.opernId),
-            opernFirstPicUrl                                            = (SELECT opernPicUrl
-                                                                           FROM tbl_opern_pic_info OPI
-                                                                           WHERE OPI.opernId = OI.id
-                                                                           ORDER BY opernPicIndex
-                                                                           LIMIT 1)
+        SET opernPicNum = (SELECT count(1)
+        FROM tbl_opern_pic_info OPI
+        WHERE OI.id = OPI.opernId),
+        opernFirstPicUrl = (SELECT opernPicUrl
+        FROM tbl_opern_pic_info OPI
+        WHERE OPI.opernId = OI.id
+        ORDER BY opernPicIndex
+        LIMIT 1)
     </update>
 
     <select id="listOpernInfo" resultType="model.OpernInfo">

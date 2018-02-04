@@ -64,6 +64,9 @@ public class GetAllOpernPicInfo {
         sqlSession.close();
     }
 
+    /**
+     * 初始化JS
+     */
     private static void initJS() throws Exception {
         engine.eval(Config.commonjs);
         inv = (Invocable) engine;

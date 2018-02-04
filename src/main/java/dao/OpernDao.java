@@ -13,6 +13,11 @@ public interface OpernDao {
     int insertOpernInfos(List<OpernInfo> opernInfoList);
 
     /**
+     * 插入曲谱数据
+     */
+    int insertOpernInfo(OpernInfo opernInfo);
+
+    /**
      * 查询曲谱数据
      */
     List<OpernInfo> listOpernInfo();

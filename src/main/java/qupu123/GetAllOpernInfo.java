@@ -51,7 +51,7 @@ public class GetAllOpernInfo {
 
         SqlSession sqlSession = MyBatis.getSqlSessionFactory().openSession(ExecutorType.BATCH);
         OpernDao dao = sqlSession.getMapper(OpernDao.class);
-        dao.insertOpernInfos(opernInfoArrayList);
+        opernInfoArrayList.forEach(dao::insertOpernInfo);
         sqlSession.commit();
         sqlSession.close();
     }
