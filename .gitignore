@@ -33,7 +33,7 @@ logs
 
 # system ignore
 .DS_Store
-Thumbs.db
+Thumbs.com.opern.reptile.db
 Servers
 .metadata
 upload

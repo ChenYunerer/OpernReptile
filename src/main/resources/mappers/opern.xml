@@ -2,7 +2,7 @@
 <!DOCTYPE mapper
         PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="dao.OpernDao">
+<mapper namespace="com.opern.reptile.dao.OpernDao">
 
     <insert id="insertOpernInfos">
         INSERT INTO tbl_opern_info (originName, originId, opernName, opernWordAuthor, opernSongAuthor, opernViews,
@@ -29,25 +29,25 @@
         </foreach>
     </insert>
 
-    <insert id="insertOpernInfo" parameterType="model.OpernInfo">
-        INSERT INTO tbl_opern_info (originName, originId, opernName, opernWordAuthor, opernSongAuthor, opernViews,
+    <insert id="insertOpernInfo" parameterType="com.opern.reptile.model.OpernInfo">
+        REPLACE INTO tbl_opern_info (originName, originId, opernName, opernWordAuthor, opernSongAuthor, opernViews,
                                     opernUploader, opernOriginHtmlUrl, opernPicNum, opernFirstPicUrl, opernFormat, opernCategoryOne,
                                     opernCategoryTwo, opernUploadTime, addTime) VALUES
             (
-                #{opernInfo.originName},
-                #{opernInfo.originId},
-                #{opernInfo.opernName},
-                #{opernInfo.opernWordAuthor},
-                #{opernInfo.opernSongAuthor},
-                #{opernInfo.opernViews},
-                #{opernInfo.opernUploader},
-                #{opernInfo.opernOriginHtmlUrl},
-                #{opernInfo.opernPicNum},
-                #{opernInfo.opernFirstPicUrl},
-                #{opernInfo.opernFormat},
-                #{opernInfo.opernCategoryOne},
-                #{opernInfo.opernCategoryTwo},
-                #{opernInfo.opernUploadTime},
+        #{originName},
+        #{originId},
+        #{opernName},
+        #{opernWordAuthor},
+        #{opernSongAuthor},
+        #{opernViews},
+        #{opernUploader},
+        #{opernOriginHtmlUrl},
+        #{opernPicNum},
+        #{opernFirstPicUrl},
+        #{opernFormat},
+        #{opernCategoryOne},
+        #{opernCategoryTwo},
+        #{opernUploadTime},
                 now()
             )
     </insert>
@@ -63,6 +63,15 @@
         </foreach>
     </insert>
 
+    <insert id="insertOpernPicInfo">
+        INSERT INTO tbl_opern_pic_info (opernId, opernPicIndex, opernPicUrl) VALUES
+            (
+                #{opernId},
+                #{opernPicIndex},
+                #{opernPicUrl}
+            )
+    </insert>
+
     <update id="updateOpernPicNumFirstPicInfo">
         UPDATE tbl_opern_info OI
         SET opernPicNum = (SELECT count(1)
@@ -75,7 +84,7 @@
         LIMIT 1)
     </update>
 
-    <select id="listOpernInfo" resultType="model.OpernInfo">
+    <select id="listOpernInfo" resultType="com.opern.reptile.model.OpernInfo">
         SELECT *
         FROM tbl_opern_info
     </select>
