@@ -2,6 +2,7 @@ package com.opern.reptile.zhanmeishi;
 
 import com.opern.reptile.model.zanmeishi.OpernListInfo;
 import com.opern.reptile.net.HttpUtil;
+import com.opern.reptile.utils.FileUtil;
 import com.opern.reptile.utils.LogUtil;
 import com.opern.reptile.utils.StringUtil;
 import org.jsoup.Jsoup;
@@ -98,31 +99,13 @@ public class GetAllOpernListInfo {
      * 将曲谱列表数据写入文件
      */
     private static void writeData2File(List<OpernListInfo> opernListInfoList, String path, String fileName) {
-        File filePath = new File(path);
-        if (!filePath.exists()) {
-            boolean success = filePath.mkdirs();
-            LogUtil.i("创建曲谱列表数据临时文件路径", "创建" + (success ? "成功" : "失败"));
+        boolean success = FileUtil.createFile(path, fileName);
+        if (!success) {
+            return;
         }
-        File tempFile = new File(path + fileName);
-        if (!tempFile.exists()) {
-            try {
-                boolean success = tempFile.createNewFile();
-                LogUtil.i("创建曲谱列表数据临时文件", "创建" + (success ? "成功" : "失败"));
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        } else {
-            boolean success = tempFile.delete();
-            LogUtil.i("删除曲谱列表数据临时文件", "创建" + (success ? "成功" : "失败"));
-            try {
-                boolean createSuccess = tempFile.createNewFile();
-                LogUtil.i("创建曲谱列表数据临时文件", "创建" + (createSuccess ? "成功" : "失败"));
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
+        File file = new File(path + fileName);
         try {
-            FileWriter fileWriter = new FileWriter(tempFile, true);
+            FileWriter fileWriter = new FileWriter(file, true);
             PrintWriter printWriter = new PrintWriter(fileWriter);
             opernListInfoList.forEach(opernListInfo -> printWriter.println(opernListInfo.getOpernName() + Config.SEPARATOR + opernListInfo.getOpernOriginHtmlUrl()));
             printWriter.flush();

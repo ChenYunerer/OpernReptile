@@ -5,7 +5,9 @@ import com.opern.reptile.db.MyBatis;
 import com.opern.reptile.model.OpernInfo;
 import com.opern.reptile.model.qupu123.OpernListInfo;
 import com.opern.reptile.net.HttpUtil;
+import com.opern.reptile.utils.FileUtil;
 import com.opern.reptile.utils.LogUtil;
+import com.opern.reptile.utils.MultiThreadUtil;
 import com.opern.reptile.utils.StringUtil;
 import org.apache.ibatis.session.ExecutorType;
 import org.apache.ibatis.session.SqlSession;
@@ -16,62 +18,40 @@ import org.jsoup.select.Elements;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.CountDownLatch;
 
 /**
  * 获取曲谱信息
  */
 public class GetAllOpernInfo {
-    private static CountDownLatch countDownLatch;
-    private static ArrayList<OpernInfo> opernInfoArrayList = new ArrayList<>();
-    private static ArrayList<OpernInfo> opernInfoArrayList1 = new ArrayList<>();
-    private static ArrayList<OpernInfo> opernInfoArrayList2 = new ArrayList<>();
-    private static ArrayList<OpernInfo> opernInfoArrayList3 = new ArrayList<>();
-    private static ArrayList<OpernInfo> opernInfoArrayList4 = new ArrayList<>();
-    private static ArrayList<OpernInfo> opernInfoArrayList5 = new ArrayList<>();
 
-
-    public static void main(String[] strings) throws Exception {
+    public static void main(String[] strings) {
         List<OpernListInfo> list = getOpernListInfoFromFile(Config.TEMP_TILE_PATH, Config.OPERN_LIST_TEMP_FILE_NAME);
-        countDownLatch = new CountDownLatch(5);
-        new WorkThread(list.subList(0, list.size() / 5), opernInfoArrayList1).start();
-        new WorkThread(list.subList(list.size() / 5, list.size() / 5 * 2), opernInfoArrayList2).start();
-        new WorkThread(list.subList(list.size() / 5 * 2, list.size() / 5 * 3), opernInfoArrayList3).start();
-        new WorkThread(list.subList(list.size() / 5 * 3, list.size() / 5 * 4), opernInfoArrayList4).start();
-        new WorkThread(list.subList(list.size() / 5 * 4, list.size()), opernInfoArrayList5).start();
-        countDownLatch.await();
-        opernInfoArrayList.addAll(opernInfoArrayList1);
-        opernInfoArrayList.addAll(opernInfoArrayList2);
-        opernInfoArrayList.addAll(opernInfoArrayList3);
-        opernInfoArrayList.addAll(opernInfoArrayList4);
-        opernInfoArrayList.addAll(opernInfoArrayList5);
-        writeData2File(opernInfoArrayList, Config.TEMP_TILE_PATH, Config.OPERN_INFO_TEMP_FILE_NAME);
-        SqlSession sqlSession = MyBatis.getSqlSessionFactory().openSession(ExecutorType.BATCH);
-        OpernDao dao = sqlSession.getMapper(OpernDao.class);
-        for (int index = 0; index < opernInfoArrayList.size(); index++) {
-            LogUtil.i("插入数据库", index + "");
-            try {
-                dao.insertOpernInfo(opernInfoArrayList.get(index));
-            } catch (Exception e) {
-                e.printStackTrace();
+
+        MultiThreadUtil<OpernListInfo, OpernInfo> multiThreadUtil = new MultiThreadUtil<>(new Worker(), resultList -> {
+            System.out.println(resultList.size());
+            resultList.forEach(opernInfo -> System.out.println(opernInfo.getOpernName()));
+            writeData2File(resultList, Config.TEMP_TILE_PATH, Config.OPERN_INFO_TEMP_FILE_NAME);
+            SqlSession sqlSession = MyBatis.getSqlSessionFactory().openSession(ExecutorType.BATCH);
+            OpernDao dao = sqlSession.getMapper(OpernDao.class);
+            for (int index = 0; index < resultList.size(); index++) {
+                LogUtil.i("插入数据库", index + "");
+                try {
+                    dao.insertOpernInfo(resultList.get(index));
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
             }
-        }
-        sqlSession.commit();
-        sqlSession.close();
+            sqlSession.commit();
+            sqlSession.close();
+        }, list);
+        multiThreadUtil.start();
     }
 
-    public static class WorkThread extends Thread {
-        List<OpernListInfo> list;
-        ArrayList<OpernInfo> opernInfoArrayList;
-
-        public WorkThread(List<OpernListInfo> list, ArrayList<OpernInfo> opernInfoArrayList) {
-            this.list = list;
-            this.opernInfoArrayList = opernInfoArrayList;
-        }
+    public static class Worker implements MultiThreadUtil.Worker<OpernListInfo, OpernInfo> {
 
         @Override
-        public void run() {
-            super.run();
+        public List<OpernInfo> work(List<OpernListInfo> list) {
+            ArrayList<OpernInfo> opernInfoArrayList = new ArrayList<>();
             int a = 0;
             for (OpernListInfo info : list) {
                 LogUtil.i(Thread.currentThread().getName() + " " + a++ + " " + info.getOpernOriginHtmlUrl());
@@ -152,8 +132,8 @@ public class GetAllOpernInfo {
                 opernInfoArrayList.add(opernInfo);
                 LogUtil.i(opernInfo.toString());
             }
-            countDownLatch.countDown();
             LogUtil.i(Thread.currentThread().getName() + " over");
+            return opernInfoArrayList;
         }
     }
 
@@ -190,31 +170,13 @@ public class GetAllOpernInfo {
      * 将曲谱数据写入文件
      */
     private static void writeData2File(List<OpernInfo> opernInfoList, String path, String fileName) {
-        File filePath = new File(path);
-        if (!filePath.exists()) {
-            boolean success = filePath.mkdirs();
-            LogUtil.i("创建曲谱数据临时文件路径", "创建" + (success ? "成功" : "失败"));
-        }
-        File tempFile = new File(path + fileName);
-        if (!tempFile.exists()) {
-            try {
-                boolean success = tempFile.createNewFile();
-                LogUtil.i("创建曲谱数据临时文件", "创建" + (success ? "成功" : "失败"));
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        } else {
-            boolean success = tempFile.delete();
-            LogUtil.i("删除曲谱数据临时文件", "创建" + (success ? "成功" : "失败"));
-            try {
-                boolean createSuccess = tempFile.createNewFile();
-                LogUtil.i("创建曲谱数据临时文件", "创建" + (createSuccess ? "成功" : "失败"));
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+        boolean success = FileUtil.createFile(path, fileName);
+        if (!success) {
+            return;
         }
         try {
-            FileWriter fileWriter = new FileWriter(tempFile, true);
+            File file = new File(path + fileName);
+            FileWriter fileWriter = new FileWriter(file, true);
             PrintWriter printWriter = new PrintWriter(fileWriter);
             opernInfoList.forEach(opernInfo -> printWriter.println(
                     opernInfo.getId() + Config.SEPARATOR
