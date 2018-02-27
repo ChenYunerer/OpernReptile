@@ -11,7 +11,7 @@
                 <property name="url"
                           value="jdbc:mysql://rm-2ze5sllf9zl6e9j39uo.mysql.rds.aliyuncs.com/opern?characterEncoding=utf8"/>
                 <property name="username" value="root"/>
-                <property name="password" value="12345cyCY"/>
+                <property name="password" value=""/>
             </dataSource>
         </environment>
     </environments>
