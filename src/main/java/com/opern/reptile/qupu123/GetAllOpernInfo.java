@@ -29,22 +29,28 @@ public class GetAllOpernInfo {
 
         MultiThreadUtil<OpernListInfo, OpernInfo> multiThreadUtil = new MultiThreadUtil<>(new Worker(), resultList -> {
             System.out.println(resultList.size());
-            resultList.forEach(opernInfo -> System.out.println(opernInfo.getOpernName()));
             writeData2File(resultList, Config.TEMP_TILE_PATH, Config.OPERN_INFO_TEMP_FILE_NAME);
-            SqlSession sqlSession = MyBatis.getSqlSessionFactory().openSession(ExecutorType.BATCH);
-            OpernDao dao = sqlSession.getMapper(OpernDao.class);
-            for (int index = 0; index < resultList.size(); index++) {
-                LogUtil.i("插入数据库", index + "");
-                try {
-                    dao.insertOpernInfo(resultList.get(index));
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
-            sqlSession.commit();
-            sqlSession.close();
+            saveToDB(resultList);
         }, list);
         multiThreadUtil.start();
+    }
+
+    private static void saveToDB(List<OpernInfo> list) {
+        int dataSize = 10000;
+        SqlSession sqlSession = MyBatis.getSqlSessionFactory().openSession(ExecutorType.BATCH);
+        OpernDao dao = sqlSession.getMapper(OpernDao.class);
+        List<OpernInfo> subList = list.subList(0, dataSize);
+        try {
+            dao.insertOpernInfos(subList);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        sqlSession.commit();
+        sqlSession.close();
+        if (subList.size() == dataSize) {
+            list = list.subList(dataSize, list.size());
+            saveToDB(list);
+        }
     }
 
     public static class Worker implements MultiThreadUtil.Worker<OpernListInfo, OpernInfo> {
