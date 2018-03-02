@@ -57,22 +57,28 @@ public class GetAllOpernPicInfo {
         opernPicInfoList.addAll(opernPicInfoList3);
         opernPicInfoList.addAll(opernPicInfoList4);
         opernPicInfoList.addAll(opernPicInfoList5);
-        sqlSession = MyBatis.getSqlSessionFactory().openSession();
-        dao = sqlSession.getMapper(OpernDao.class);
-        for (int index = 0; index < opernPicInfoList.size(); index++) {
-            LogUtil.i("Insert2DB", index + "of" + opernPicInfoList.size());
-            try {
-                int i = dao.insertOpernPicInfo(opernPicInfoList.get(index));
-                sqlSession.commit();
-                LogUtil.i("Insert2DB", i == 0 ? "插入失败" : "插入成功");
-            } catch (Exception e) {
-                //e.printStackTrace();
-                //LogUtil.e("Insert2DB", e.getMessage());
-            }
-        }
-        //com.opern.reptile.dao.updateOpernPicNumFirstPicInfo();
+        save2DB(opernPicInfoList);
+    }
 
+    private static void save2DB(List<OpernPicInfo> picInfoList) {
+        int size = 5000;
+        size = picInfoList.size() < size ? picInfoList.size() : size;
+        SqlSession sqlSession = MyBatis.getSqlSessionFactory().openSession(ExecutorType.BATCH);
+        OpernDao dao = sqlSession.getMapper(OpernDao.class);
+        List<OpernPicInfo> subList = picInfoList.subList(0, size);
+        try {
+            dao.insertOpernPicInfos(subList);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        sqlSession.commit();
         sqlSession.close();
+        picInfoList.removeAll(subList);
+        if (picInfoList.isEmpty()) {
+            return;
+        } else {
+            save2DB(picInfoList);
+        }
     }
 
     /**
@@ -135,7 +141,6 @@ public class GetAllOpernPicInfo {
                             synchronized (GetAllOpernPicInfo.class) {
                                 k0_p = (String) scriptEngine.get(k0);
                                 imgUrl = (String) inv.invokeFunction("showopern", k0_p, k1);
-                                imgUrl = imgUrl.toLowerCase();
                             }
                             LogUtil.i("xxx" + imgUrl);
                             imgUrl = imgUrl.startsWith("/") ? imgUrl.substring(1) : imgUrl;

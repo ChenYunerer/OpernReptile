@@ -37,6 +37,7 @@ public class GetAllOpernInfo {
 
     private static void saveToDB(List<OpernInfo> list) {
         int dataSize = 10000;
+        dataSize = list.size() < dataSize ? list.size() : dataSize;
         SqlSession sqlSession = MyBatis.getSqlSessionFactory().openSession(ExecutorType.BATCH);
         OpernDao dao = sqlSession.getMapper(OpernDao.class);
         List<OpernInfo> subList = list.subList(0, dataSize);
@@ -47,8 +48,10 @@ public class GetAllOpernInfo {
         }
         sqlSession.commit();
         sqlSession.close();
-        if (subList.size() == dataSize) {
-            list = list.subList(dataSize, list.size());
+        list.removeAll(subList);
+        if (list.isEmpty()) {
+            return;
+        } else {
             saveToDB(list);
         }
     }
