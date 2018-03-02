@@ -44,7 +44,7 @@ public class GetAllOpernPicInfo {
         SqlSession sqlSession = MyBatis.getSqlSessionFactory().openSession(ExecutorType.BATCH);
         OpernDao dao = sqlSession.getMapper(OpernDao.class);
         List<OpernInfo> opernInfoList = dao.listOpernInfo();
-
+        sqlSession.close();
         countDownLatch = new CountDownLatch(5);
         new WorkThread(opernInfoList.subList(0, opernInfoList.size() / 5), opernPicInfoList1).start();
         new WorkThread(opernInfoList.subList(opernInfoList.size() / 5, opernInfoList.size() / 5 * 2), opernPicInfoList2).start();
@@ -57,9 +57,21 @@ public class GetAllOpernPicInfo {
         opernPicInfoList.addAll(opernPicInfoList3);
         opernPicInfoList.addAll(opernPicInfoList4);
         opernPicInfoList.addAll(opernPicInfoList5);
-        opernPicInfoList.forEach(dao::insertOpernPicInfo);
+        sqlSession = MyBatis.getSqlSessionFactory().openSession();
+        dao = sqlSession.getMapper(OpernDao.class);
+        for (int index = 0; index < opernPicInfoList.size(); index++) {
+            LogUtil.i("Insert2DB", index + "of" + opernPicInfoList.size());
+            try {
+                int i = dao.insertOpernPicInfo(opernPicInfoList.get(index));
+                sqlSession.commit();
+                LogUtil.i("Insert2DB", i == 0 ? "插入失败" : "插入成功");
+            } catch (Exception e) {
+                //e.printStackTrace();
+                //LogUtil.e("Insert2DB", e.getMessage());
+            }
+        }
         //com.opern.reptile.dao.updateOpernPicNumFirstPicInfo();
-        sqlSession.commit();
+
         sqlSession.close();
     }
 
@@ -84,9 +96,13 @@ public class GetAllOpernPicInfo {
         public void run() {
             super.run();
             for (int index = 0; index < opernInfoList.size(); index++) {
+                LogUtil.d("GetAllOpernPicInfo", Thread.currentThread().getName() + " " + index + "of" + opernInfoList.size() + " " + opernInfoList.get(index).getOriginId());
                 OpernInfo opernInfo = opernInfoList.get(index);
                 String mobileHtml = HttpUtil.get(Config.QUPU123_MOBILE_URL + opernInfo.getOriginId() + ".html");
                 if (mobileHtml.equals("")) {
+                    continue;
+                }
+                if (mobileHtml.contains("此曲谱不存在或已被删除")) {
                     continue;
                 }
                 Document mobileDocument = Jsoup.parse(mobileHtml);
@@ -97,7 +113,7 @@ public class GetAllOpernPicInfo {
                 try {
                     scriptEngine.eval(js);
                 } catch (ScriptException e) {
-                    LogUtil.e("解析JS", "解析失败" + opernInfo.getOpernName() + " " + opernInfo.getOpernOriginHtmlUrl());
+                    //LogUtil.e("解析JS", "解析失败" + opernInfo.getOpernName() + " " + opernInfo.getOpernOriginHtmlUrl());
                 }
                 ArrayList<String> imgs = new ArrayList<String>();
                 for (Element l : mobileDocument.getElementsByClass("image_list").get(0).children()) {
@@ -114,8 +130,14 @@ public class GetAllOpernPicInfo {
                             int d = l.toString().indexOf("\"");
                             int e = l.toString().indexOf("\"", d + 1);
                             String k1 = l.toString().substring(d + 1, e);
-                            String k0_p = (String) scriptEngine.get(k0);
-                            String imgUrl = (String) inv.invokeFunction("showopern", k0_p, k1);
+                            String k0_p;
+                            String imgUrl;
+                            synchronized (GetAllOpernPicInfo.class) {
+                                k0_p = (String) scriptEngine.get(k0);
+                                imgUrl = (String) inv.invokeFunction("showopern", k0_p, k1);
+                                imgUrl = imgUrl.toLowerCase();
+                            }
+                            LogUtil.i("xxx" + imgUrl);
                             imgUrl = imgUrl.startsWith("/") ? imgUrl.substring(1) : imgUrl;
                             imgs.add(Config.QUPU123_BASE_URL + imgUrl);
                         } catch (Exception e) {
@@ -130,10 +152,12 @@ public class GetAllOpernPicInfo {
                     opernPicInfo.setOpernPicIndex(i);
                     opernPicInfo.setOpernPicUrl(imgs.get(i - 1));
                     opernPicInfos.add(opernPicInfo);
+                    LogUtil.i(opernPicInfo.toString());
                 }
                 opernPicInfoList.addAll(opernPicInfos);
             }
             countDownLatch.countDown();
+            LogUtil.d("GetAllOpernPicInfo", Thread.currentThread().getName() + "结束");
         }
     }
 }

@@ -87,6 +87,7 @@
     <select id="listOpernInfo" resultType="com.opern.reptile.model.OpernInfo">
         SELECT *
         FROM tbl_opern_info
+        LIMIT 0, 50000
     </select>
 
 
