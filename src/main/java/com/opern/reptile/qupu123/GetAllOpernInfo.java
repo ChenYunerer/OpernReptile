@@ -128,7 +128,7 @@ public class GetAllOpernInfo {
                     } else if (s.equals("上传：")) {
                         opernInfo.setOpernUploader(strs[i]);
                     } else if (s.equals("日期：")) {
-                        opernInfo.setOpernUploadTime(strs[i]);
+                        opernInfo.setOpernUploadTime(strs[i].trim());
                     }
                 }
                 String viewCountStr = HttpUtil.get(Config.VIEW_COUNT_URL + opernInfo.getOriginId() + ".html");
